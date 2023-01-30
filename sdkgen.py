@@ -131,7 +131,7 @@ if __name__ == "__main__":
     vers = sys.argv[1]
 
     if not os.path.exists(f'{vers}.dsc'):
-        ipsw.try_dl_and_extract(f'{vers}', 'iPhone15,2', f'{vers}.dsc')
+        ipsw.try_dl_and_extract(f'{vers}', 'iPhone11,8', f'{vers}.dsc')
     if not os.path.exists(f'{vers}.bins'):
         de.extract_all(f'{vers}.dsc', f'{vers}.bins')
     if not os.path.exists(f'{vers}.extracted'):
