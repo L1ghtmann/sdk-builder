@@ -3,6 +3,7 @@ import multiprocessing
 import concurrent.futures
 import sys
 import os
+import shutil
 import glob
 import ktool
 import time
@@ -21,73 +22,25 @@ def system_with_output(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, echo
                             stderr=stderr,
                             shell=True)
     std_out, std_err = proc.communicate()
-    return proc.returncode, std_out, std_err
-
-
-def system_pipe_output(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, echo=False):
-    if echo:
-        print(cmd)
-
-    process = subprocess.Popen(cmd,
-                               stdout=stdout,
-                               stderr=stderr,
-                               shell=True)
-
-    while True:
-        realtime_output = process.stdout.readline()
-        realtime_err = process.stderr.readline()
-
-        if realtime_output == '' and realtime_err == '' and process.poll() is not None:
-            break
-
-        if realtime_output:
-            print(realtime_output.strip(), flush=True)
-        if realtime_err:
-            print(realtime_err.strip(), flush=True, file=sys.stderr)
-
-
-class IPSWAdapter:
-    def __init__(self):
-        self.ipsw_path = 'ipsw'
-
-    def try_dl_and_extract(self, version, device, output_folder, max_dl_attempts=5):
-        attempts = max_dl_attempts
-        while attempts >= 0:
-            if self.download(version, device):
-                break
-            attempts -= 1
-            time.sleep(10)
-
-        if self.extract(output_folder):
-            system('rm *.ipsw')
-
-
-
-    def extract(self, output_folder, ipsw_name='$(ls *.ipsw | xargs)'):
-        if not system(f'{self.ipsw_path} extract -d {ipsw_name}'):
-            return False
-        if not system(f'mkdir -p {output_folder}'):
-            return False
-        if not system(f'mv $(find . -name dyld_shared_cache* | xargs) {output_folder}'):
-            return False
-
-    def download(self, version, device):
-        if not system(f'{self.ipsw_path} download ipsw --version {version} --device {device}', echo=True):
-            return False
-        return True
+    return std_out.decode("utf-8")
 
 
 class DEAdapter:
     def __init__(self):
         pass
 
-    def extract_all(self, dsc_folder, output_folder):
+    def extract_all(self, dsc, output):
         cwd = os.getcwd()
-        os.chdir(dsc_folder)
-        system(f'dyldex_all -j$(nproc --all) dyld_shared_cache_arm64')
-        system(f'mv binaries/System ./')
-        os.chdir(cwd)
-        system(f'mv {dsc_folder}/System/* {output_folder}')
+        dsc = cwd + dsc
+        ext = 'ext'
+        os.mkdir(ext)
+        os.chdir(ext)
+        jobs = os.cpu_count()
+        system(f'dyldex_all -j{jobs} {dsc}')
+        if shutil.copytree('binaries/System', cwd + output):
+            os.remove(dsc)
+            os.chdir(cwd)
+            shutil.rmtree(ext)
 
 
 def dump(filename):
@@ -132,18 +85,59 @@ def trydump(item):
         print(f'{item} Fail')
 
 
-if __name__ == "__main__":
-    ipsw = IPSWAdapter()
-    de = DEAdapter()
+def dl(ver, device, output):
+    # https://gist.github.com/PsychoTea/d9ca14d2687890f15900d901f600bf6a
+    ipsw = system_with_output(f'curl https://api.ipsw.me/v4/device/{device}?type=ipsw 2>/dev/null | jq -r \'.firmwares[] | select(.version == "{ver}") | .url\'')
+    if ipsw == "":
+        return False
+    # get largest dmg
+    dmg = system_with_output(f'partialzip list {ipsw} | grep dmg | grep GB | sed \'s/\.dmg.*/.dmg/\'')
+    if dmg == "":
+        return False
+    if not system(f'partialzip download {ipsw} {dmg} the.dmg', echo=True):
+        return False
+    # prep for mount
+    if not system(f'sudo mkdir -p /mnt/ipsw', echo=True):
+        return False
+    uid = os.getuid()
+    gid = os.getgid()
+    # give regular user rwx
+    dmg = 'the.dmg'
+    mnt = '/mnt/ipsw'
+    if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {dmg} {mnt}', echo=True):
+        return False
+    # grab the thing
+    if shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
+        os.remove(dmg)
+    else:
+        return False
+    # cleanup
+    if not system(f'fusermount -u /mnt/ipsw', echo=True):
+        return False
+    if not shutil.rmtree(mnt)
+        return False
+    return True
 
+
+def trydl(ver, device, output, attempts=5):
+    while attempts >= 0:
+        if dl(version, device, output):
+            break
+        attempts -= 1
+        time.sleep(10)
+
+
+if __name__ == "__main__":
+    de = DEAdapter()
+    device = 'iPhone10,3'
     vers = sys.argv[1]
 
     if not os.path.exists(f'{vers}.dsc'):
-        ipsw.try_dl_and_extract(f'{vers}', 'iPhone10,3', f'{vers}.dsc')
+        trydl(f'{vers}', f'{device}', f'{vers}.dsc')
     if not os.path.exists(f'{vers}.bins'):
         de.extract_all(f'{vers}.dsc', f'{vers}.bins')
     if not os.path.exists(f'{vers}.extracted'):
-        system(f"cp -r {vers}.bins {vers}.extracted")
+        shutil.copytree(f'{vers}.bins', f'{vers}.extracted')
 
     file_batch_list = []
 
