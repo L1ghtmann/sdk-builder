@@ -114,7 +114,7 @@ def dl(ver, device, output):
     # cleanup
     if not system(f'fusermount -u /mnt/ipsw', echo=True):
         return False
-    if not shutil.rmtree(mnt)
+    if not shutil.rmtree(mnt):
         return False
     return True
 
