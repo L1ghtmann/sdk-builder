@@ -121,7 +121,7 @@ def dl(ver, device, output):
 
 def trydl(ver, device, output, attempts=5):
     while attempts >= 0:
-        if dl(version, device, output):
+        if dl(ver, device, output):
             break
         attempts -= 1
         time.sleep(10)
