@@ -87,11 +87,11 @@ def trydump(item):
 
 def dl(ver, device, output):
     # https://gist.github.com/PsychoTea/d9ca14d2687890f15900d901f600bf6a
-    ipsw = system_with_output(f'curl https://api.ipsw.me/v4/device/{device}?type=ipsw 2>/dev/null | jq -r \'.firmwares[] | select(.version == "{ver}") | .url\'')
+    ipsw = system_with_output(f'curl https://api.ipsw.me/v4/device/{device}?type=ipsw 2>/dev/null | jq -r \'.firmwares[] | select(.version == "{ver}") | .url\'').rstrip()
     if ipsw == "":
         return False
     # get largest dmg
-    dmg = system_with_output(f'partialzip list {ipsw} | grep dmg | grep GB | sed \'s/\.dmg.*/.dmg/\'')
+    dmg = system_with_output(f'partialzip list {ipsw} | grep dmg | grep GB | sed \'s/\.dmg.*/.dmg/\'').rstrip()
     if dmg == "":
         return False
     if not system(f'partialzip download {ipsw} {dmg} the.dmg', echo=True):
