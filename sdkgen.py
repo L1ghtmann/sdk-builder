@@ -94,25 +94,25 @@ def dl(ver, device, output):
     dmg = system_with_output(f'partialzip list {ipsw} | grep dmg | grep GB | sed \'s/\.dmg.*/.dmg/\'').rstrip()
     if dmg == "":
         return False
-    if not system(f'partialzip download {ipsw} {dmg} the.dmg', echo=True):
+    our_dmg = 'the.dmg'
+    if not system(f'partialzip download {ipsw} {dmg} {our_dmg}', echo=True):
         return False
     # prep for mount
-    if not system(f'sudo mkdir -p /mnt/ipsw', echo=True):
+    mnt = '/mnt/ipsw'
+    if not system(f'sudo mkdir -p {mnt}', echo=True):
         return False
     uid = os.getuid()
     gid = os.getgid()
     # give regular user rwx
-    dmg = 'the.dmg'
-    mnt = '/mnt/ipsw'
-    if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {dmg} {mnt}', echo=True):
+    if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {our_dmg} {mnt}', echo=True):
         return False
     # grab the thing
     if shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
-        os.remove(dmg)
+        os.remove(our_dmg)
     else:
         return False
     # cleanup
-    if not system(f'fusermount -u /mnt/ipsw', echo=True):
+    if not system(f'fusermount -u {mnt}', echo=True):
         return False
     if not shutil.rmtree(mnt):
         return False
@@ -132,16 +132,20 @@ if __name__ == "__main__":
     device = 'iPhone10,3'
     vers = sys.argv[1]
 
-    if not os.path.exists(f'{vers}.dsc'):
-        trydl(f'{vers}', f'{device}', f'{vers}.dsc')
-    if not os.path.exists(f'{vers}.bins'):
-        de.extract_all(f'{vers}.dsc', f'{vers}.bins')
-    if not os.path.exists(f'{vers}.extracted'):
-        shutil.copytree(f'{vers}.bins', f'{vers}.extracted')
+    dsc = f'{vers}.dsc'
+    bins = f'{vers}.bins'
+    ext = f'{vers}.extracted'
+
+    if not os.path.exists(dsc):
+        trydl(vers, device, dsc)
+    if not os.path.exists(bins):
+        de.extract_all(dsc, bins)
+    if not os.path.exists(ext):
+        shutil.copytree(bins, ext)
 
     file_batch_list = []
 
-    for filename in glob.iglob(f'{vers}.extracted/' + '**/**', recursive=True):
+    for filename in glob.iglob(ext + '**/**', recursive=True):
         if os.path.isfile(filename):
             if not os.path.exists(filename + '.tbd'):
                 if not '.h' in filename and not '.tbd' in filename:
