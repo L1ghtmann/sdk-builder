@@ -32,9 +32,11 @@ class DEAdapter:
     def extract_all(self, dsc, output):
         cwd = os.getcwd()
         dsc = cwd + dsc
+
         ext = 'ext'
         os.mkdir(ext)
         os.chdir(ext)
+
         jobs = os.cpu_count()
         system(f'dyldex_all -j{jobs} {dsc}')
         if shutil.copytree('binaries/System', cwd + output):
@@ -90,32 +92,43 @@ def dl(ver, device, output):
     ipsw = system_with_output(f'curl https://api.ipsw.me/v4/device/{device}?type=ipsw 2>/dev/null | jq -r \'.firmwares[] | select(.version == "{ver}") | .url\'').rstrip()
     if ipsw == "":
         return False
+
     # get largest dmg
-    dmg = system_with_output(f'partialzip list {ipsw} | grep dmg | grep GB | sed \'s/\.dmg.*/.dmg/\'').rstrip()
+    dmg = system_with_output(f'remotezip -l {ipsw} | sort -n | tail -n1 | cut -d' ' -f6').rstrip()
     if dmg == "":
         return False
-    our_dmg = 'the.dmg'
-    if not system(f'partialzip download {ipsw} {dmg} {our_dmg}', echo=True):
+
+    if not system(f'remotezip {ipsw} {dmg}', echo=True):
         return False
+
+    our_dmg = 'the.dmg'
+    shutil.move(dmg, our_dmg)
+
     # prep for mount
     mnt = '/mnt/ipsw'
     if not system(f'sudo mkdir -p {mnt}', echo=True):
         return False
+
     uid = os.getuid()
     gid = os.getgid()
+
     # give regular user rwx
     if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {our_dmg} {mnt}', echo=True):
         return False
+
     # grab the thing
-    if shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
-        os.remove(our_dmg)
-    else:
+    if not shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
         return False
+
+    os.remove(our_dmg)
+
     # cleanup
     if not system(f'fusermount -u {mnt}', echo=True):
         return False
+
     if not shutil.rmtree(mnt):
         return False
+
     return True
 
 
@@ -123,6 +136,7 @@ def trydl(ver, device, output, attempts=5):
     while attempts >= 0:
         if dl(ver, device, output):
             break
+
         attempts -= 1
         time.sleep(10)
 
@@ -150,6 +164,7 @@ if __name__ == "__main__":
             if not os.path.exists(filename + '.tbd'):
                 if not '.h' in filename and not '.tbd' in filename:
                     file_batch_list.append(filename)
+
     print(file_batch_list)
     public_frameworks = sorted(list(set(file_batch_list)))
     executor = concurrent.futures.ProcessPoolExecutor(multiprocessing.cpu_count()-1)
