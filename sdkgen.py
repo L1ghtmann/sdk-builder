@@ -154,7 +154,7 @@ def dl(ver, device, output):
         print(f'Unmounted {mnt}', flush=True)
 
     if os.path.exists(mnt):
-        if not system(f'rm -rf {mnt}', echo=True):
+        if not system(f'sudo rmdir {mnt}', echo=True):
             print(f'ERROR: Failed to remove {mnt}!', flush=True)
             return False
         print(f'Removed {mnt}', flush=True)
