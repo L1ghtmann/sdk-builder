@@ -199,7 +199,7 @@ if __name__ == "__main__":
             print('ERROR: Shared cache bin extraction failed!', flush=True)
             exit(1)
     if not os.path.exists(ext):
-        if not shutil.copytree(bins, ext)
+        if not shutil.copytree(bins, ext):
             print(f'ERROR: {bins} -> {ext} failed!', flush=True)
             exit(1)
 
