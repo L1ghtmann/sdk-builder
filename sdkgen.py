@@ -80,11 +80,11 @@ def dump(filename):
 
 def trydump(item):
     try:
-        print(f'Dumping {item}')
+        print(f'Dumping {item}', flush=True)
         dump(item)
     except Exception as ex:
-        print(ex)
-        print(f'{item} Fail')
+        print(ex, flush=True)
+        print(f'{item} Fail', flush=True)
 
 
 def dl(ver, device, output):
@@ -92,13 +92,13 @@ def dl(ver, device, output):
     ipsw = system_with_output(f'curl https://api.ipsw.me/v4/device/{device}?type=ipsw 2>/dev/null | jq -r \'.firmwares[] | select(.version == "{ver}") | .url\'').rstrip()
     if ipsw == "":
         return False
-    print(f'ipsw: {ipsw}')
+    print(f'ipsw: {ipsw}', flush=True)
 
     # get largest dmg
     dmg = system_with_output(f'remotezip -l {ipsw} | sort -n | tail -n1 | cut -d' ' -f6').rstrip()
     if dmg == "":
         return False
-    print(f'dmg: {dmg}')
+    print(f'dmg: {dmg}', flush=True)
 
     if not system(f'remotezip {ipsw} {dmg}', echo=True):
         return False
@@ -106,7 +106,7 @@ def dl(ver, device, output):
     our_dmg = 'the.dmg'
     if not shutil.move(dmg, our_dmg):
         return False
-    print(f'{dmg} -> {our_dmg}')
+    print(f'{dmg} -> {our_dmg}', flush=True)
 
     # prep for mount
     mnt = '/mnt/ipsw'
@@ -119,23 +119,23 @@ def dl(ver, device, output):
     # give regular user rwx
     if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {our_dmg} {mnt}', echo=True):
         return False
-    print(f'mounted {our_dmg} on {mnt}')
+    print(f'mounted {our_dmg} on {mnt}', flush=True)
 
     # grab the thing
     if not shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
         return False
-    print(f'grabbed shared cache -> {output}')
+    print(f'grabbed shared cache -> {output}', flush=True)
 
     os.remove(our_dmg)
 
     # cleanup
     if not system(f'fusermount -u {mnt}', echo=True):
         return False
-    print(f'unmounted {mnt}')
+    print(f'unmounted {mnt}', flush=True)
 
     if not shutil.rmtree(mnt):
         return False
-    print(f'removed {mnt}')
+    print(f'removed {mnt}', flush=True)
 
     return True
 
@@ -143,7 +143,7 @@ def dl(ver, device, output):
 def trydl(ver, device, output, attempts=5):
     while attempts >= 0:
         if dl(ver, device, output):
-            print(f'{device} {ver} ipsw download successful!')
+            print(f'{device} {ver} ipsw download successful!', flush=True)
             break
 
         attempts -= 1
@@ -160,7 +160,9 @@ if __name__ == "__main__":
     ext = f'{vers}.extracted'
 
     if not os.path.exists(dsc):
-        trydl(vers, device, dsc)
+        if not trydl(vers, device, dsc):
+            print('Shared cache download failed!', flush=True)
+            exit(1)
     if not os.path.exists(bins):
         de.extract_all(dsc, bins)
     if not os.path.exists(ext):
@@ -174,7 +176,7 @@ if __name__ == "__main__":
                 if not '.h' in filename and not '.tbd' in filename:
                     file_batch_list.append(filename)
 
-    print(file_batch_list)
+    print(file_batch_list, flush=True)
     public_frameworks = sorted(list(set(file_batch_list)))
     executor = concurrent.futures.ProcessPoolExecutor(multiprocessing.cpu_count()-1)
     futures = [executor.submit(trydump, (item)) for item in public_frameworks]
