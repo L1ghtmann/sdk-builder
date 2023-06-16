@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         version:
-          - "16.0"
+          # - "16.0"
           - "15.5"
           - "15.0"
           - "14.5"
