@@ -166,7 +166,7 @@ def trydl(ver, device, output, attempts=5):
     while attempts >= 0:
         if dl(ver, device, output):
             print(f'{device} {ver} ipsw download successful!', flush=True)
-            break
+            return True
 
         print(f'NOTE: Retrying {device} {ver} ipsw download', flush=True)
         attempts -= 1
