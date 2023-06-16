@@ -84,33 +84,38 @@ def trydump(item):
         dump(item)
     except Exception as ex:
         print(ex, flush=True)
-        print(f'{item} Fail', flush=True)
+        print(f'ERROR: {item} Fail', flush=True)
 
 
 def dl(ver, device, output):
     # https://gist.github.com/PsychoTea/d9ca14d2687890f15900d901f600bf6a
     ipsw = system_with_output(f'curl https://api.ipsw.me/v4/device/{device}?type=ipsw 2>/dev/null | jq -r \'.firmwares[] | select(.version == "{ver}") | .url\'').rstrip()
     if ipsw == "":
+        print(f'ERROR: Failed to determine {device} {ver} ipsw download link!', flush=True)
         return False
     print(f'ipsw: {ipsw}', flush=True)
 
     # get largest dmg
     dmg = system_with_output(f'remotezip -l {ipsw} | sort -n | tail -n1 | cut -d' ' -f6').rstrip()
     if dmg == "":
+        print(f'ERROR: Failed to find system dmg in {ipsw}!', flush=True)
         return False
     print(f'dmg: {dmg}', flush=True)
 
     if not system(f'remotezip {ipsw} {dmg}', echo=True):
+        print(f'ERROR: Failed to download {dmg} from {ipsw}!', flush=True)
         return False
 
     our_dmg = 'the.dmg'
     if not shutil.move(dmg, our_dmg):
+        print(f'ERROR: Failed to rename {dmg} to {our_dmg}!', flush=True)
         return False
     print(f'{dmg} -> {our_dmg}', flush=True)
 
     # prep for mount
     mnt = '/mnt/ipsw'
     if not system(f'sudo mkdir -p {mnt}', echo=True):
+        print(f'ERROR: Failed to create {mnt}!', flush=True)
         return False
 
     uid = os.getuid()
@@ -118,24 +123,28 @@ def dl(ver, device, output):
 
     # give regular user rwx
     if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {our_dmg} {mnt}', echo=True):
+        print(f'ERROR: Failed to mount {our_dmg} on {mnt}!', flush=True)
         return False
-    print(f'mounted {our_dmg} on {mnt}', flush=True)
+    print(f'Mounted {our_dmg} on {mnt}', flush=True)
 
     # grab the thing
     if not shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
+        print(f'ERROR: Failed to copy shared cache to {output}!', flush=True)
         return False
-    print(f'grabbed shared cache -> {output}', flush=True)
+    print(f'Grabbed shared cache -> {output}', flush=True)
 
     os.remove(our_dmg)
 
     # cleanup
     if not system(f'fusermount -u {mnt}', echo=True):
+        print(f'ERROR: Failed to unmount {mnt}!', flush=True)
         return False
-    print(f'unmounted {mnt}', flush=True)
+    print(f'Unmounted {mnt}', flush=True)
 
     if not shutil.rmtree(mnt):
+        print(f'ERROR: Failed to remove {mnt}!', flush=True)
         return False
-    print(f'removed {mnt}', flush=True)
+    print(f'Removed {mnt}', flush=True)
 
     return True
 
@@ -146,6 +155,7 @@ def trydl(ver, device, output, attempts=5):
             print(f'{device} {ver} ipsw download successful!', flush=True)
             break
 
+        print(f'ERROR: Retrying {device} {ver} ipsw download', flush=True)
         attempts -= 1
         time.sleep(10)
 
@@ -161,7 +171,7 @@ if __name__ == "__main__":
 
     if not os.path.exists(dsc):
         if not trydl(vers, device, dsc):
-            print('Shared cache download failed!', flush=True)
+            print('ERROR: Shared cache download failed!', flush=True)
             exit(1)
     if not os.path.exists(bins):
         de.extract_all(dsc, bins)
