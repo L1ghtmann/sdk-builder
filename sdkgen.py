@@ -96,7 +96,7 @@ def dl(ver, device, output):
     print(f'ipsw: {ipsw}', flush=True)
 
     # get largest dmg
-    dmg = system_with_output(f'remotezip -l {ipsw} | sort -n | tail -n1 | cut -d' ' -f6').rstrip()
+    dmg = system_with_output(f"remotezip -l {ipsw} | sort -n | tail -n1 | awk '{{print $4}}'").rstrip()
     if dmg == "":
         print(f'ERROR: Failed to find system dmg in {ipsw}!', flush=True)
         return False
@@ -155,7 +155,7 @@ def trydl(ver, device, output, attempts=5):
             print(f'{device} {ver} ipsw download successful!', flush=True)
             break
 
-        print(f'ERROR: Retrying {device} {ver} ipsw download', flush=True)
+        print(f'NOTE: Retrying {device} {ver} ipsw download', flush=True)
         attempts -= 1
         time.sleep(10)
 
