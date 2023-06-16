@@ -104,7 +104,7 @@ def dl(ver, device, output):
         return False
 
     our_dmg = 'the.dmg'
-    if not shutil.move(dmg, our_dmg)
+    if not shutil.move(dmg, our_dmg):
         return False
     print(f'{dmg} -> {our_dmg}')
 
