@@ -42,16 +42,16 @@ class DEAdapter:
             jobs = os.cpu_count()
             system(f'dyldex_all -j{jobs} {dsc}')
             if os.path.exists('binaries/System'):
-                if shutil.copytree('binaries/System', cwd + output):
+                if shutil.copytree('binaries/System', cwd + '/' + output):
                     if os.path.exists(dsc):
                         os.remove(dsc)
-                    if os.path.exists(cwd + ext):
+                    if os.path.exists(cwd + '/' + ext):
                         os.chdir(cwd)
                         shutil.rmtree(ext)
 
 
 def dump(filename):
-    fd = open(f'{filename}', 'rb')
+    fd = open(filename, 'rb')
 
     library = ktool.load_image(fd, force_misaligned_vm=True)
     objc_lib = ktool.load_objc_metadata(library)
@@ -89,7 +89,7 @@ def trydump(item):
         dump(item)
     except Exception as ex:
         print(ex, flush=True)
-        print(f'ERROR: {item} Fail', flush=True)
+        print(f'ERROR: Failed to dump {item}!', flush=True)
 
 
 def dl(ver, device, output):
@@ -110,7 +110,7 @@ def dl(ver, device, output):
     our_dmg = 'the.dmg'
     if not (os.path.exists(dmg) or os.path.exists(our_dmg)):
         if not system(f'remotezip {ipsw} {dmg}', echo=True):
-            print(f'ERROR: Failed to download {dmg} from {ipsw}!', flush=True)
+            print(f'ERROR: Failed to extract {dmg} from {ipsw}!', flush=True)
             return False
 
     if not os.path.exists(our_dmg):
@@ -165,10 +165,10 @@ def dl(ver, device, output):
 def trydl(ver, device, output, attempts=5):
     while attempts >= 0:
         if dl(ver, device, output):
-            print(f'{device} {ver} ipsw download successful!', flush=True)
+            print(f'{device} {ver} shared cache extraction successful!', flush=True)
             return True
 
-        print(f'NOTE: Retrying {device} {ver} ipsw download', flush=True)
+        print(f'NOTE: Retrying {device} {ver} shared cache extraction...', flush=True)
         attempts -= 1
         time.sleep(10)
 
@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
     if not os.path.exists(dsc):
         if not trydl(vers, device, dsc):
-            print('ERROR: Shared cache download failed!', flush=True)
+            print('ERROR: Shared cache extraction failed!', flush=True)
             exit(1)
     if not os.path.exists(bins):
         de.extract_all(dsc, bins)
