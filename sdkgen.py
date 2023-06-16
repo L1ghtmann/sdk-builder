@@ -40,7 +40,8 @@ class DEAdapter:
 
         if not os.path.exists('binaries'):
             jobs = os.cpu_count()
-            system(f'dyldex_all -j{jobs} {dsc}')
+            if not system(system(f'dyldex_all -j{jobs} {dsc}', echo=True):
+                return False
             if os.path.exists('binaries/System'):
                 if shutil.copytree('binaries/System', cwd + '/' + output):
                     if os.path.exists(dsc):
@@ -48,6 +49,11 @@ class DEAdapter:
                     if os.path.exists(cwd + '/' + ext):
                         os.chdir(cwd)
                         shutil.rmtree(ext)
+                    return True
+                else:
+                    return False
+            else:
+                return False
 
 
 def dump(filename):
@@ -138,6 +144,8 @@ def dl(ver, device, output):
 
     # grab the thing
     if os.path.exists(mnt + '/root'):
+        for file in os.listdir(mnt + '/root/System/Library/Caches/com.apple.dyld/'):
+            print(f'Found {file}')
         if not shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
             print(f'ERROR: Failed to copy shared cache to {output}!', flush=True)
             return False
@@ -187,9 +195,13 @@ if __name__ == "__main__":
             print('ERROR: Shared cache extraction failed!', flush=True)
             exit(1)
     if not os.path.exists(bins):
-        de.extract_all(dsc, bins)
+        if not de.extract_all(dsc, bins):
+            print('ERROR: Shared cache bin extraction failed!', flush=True)
+            exit(1)
     if not os.path.exists(ext):
-        shutil.copytree(bins, ext)
+        if not shutil.copytree(bins, ext)
+            print(f'ERROR: {bins} -> {ext} failed!', flush=True)
+            exit(1)
 
     file_batch_list = []
 
