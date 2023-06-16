@@ -38,7 +38,7 @@ class DEAdapter:
             os.mkdir(ext)
         os.chdir(ext)
 
-        if not os.path.exists('binaries'):
+        if not os.path.exists('binaries') and os.path.exists(dsc):
             jobs = os.cpu_count()
             if not system(f'dyldex_all -j{jobs} {dsc}', echo=True):
                 return False
