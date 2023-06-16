@@ -40,7 +40,7 @@ class DEAdapter:
 
         if not os.path.exists('binaries'):
             jobs = os.cpu_count()
-            if not system(system(f'dyldex_all -j{jobs} {dsc}', echo=True):
+            if not system(f'dyldex_all -j{jobs} {dsc}', echo=True):
                 return False
             if os.path.exists('binaries/System'):
                 if shutil.copytree('binaries/System', cwd + '/' + output):
