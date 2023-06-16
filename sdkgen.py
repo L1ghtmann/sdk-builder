@@ -31,7 +31,7 @@ class DEAdapter:
 
     def extract_all(self, dsc, output):
         cwd = os.getcwd()
-        dsc = cwd + dsc
+        dsc = cwd + '/' + dsc
 
         ext = 'ext'
         os.mkdir(ext)
@@ -92,17 +92,21 @@ def dl(ver, device, output):
     ipsw = system_with_output(f'curl https://api.ipsw.me/v4/device/{device}?type=ipsw 2>/dev/null | jq -r \'.firmwares[] | select(.version == "{ver}") | .url\'').rstrip()
     if ipsw == "":
         return False
+    print(f'ipsw: {ipsw}')
 
     # get largest dmg
     dmg = system_with_output(f'remotezip -l {ipsw} | sort -n | tail -n1 | cut -d' ' -f6').rstrip()
     if dmg == "":
         return False
+    print(f'dmg: {dmg}')
 
     if not system(f'remotezip {ipsw} {dmg}', echo=True):
         return False
 
     our_dmg = 'the.dmg'
-    shutil.move(dmg, our_dmg)
+    if not shutil.move(dmg, our_dmg)
+        return False
+    print(f'{dmg} -> {our_dmg}')
 
     # prep for mount
     mnt = '/mnt/ipsw'
@@ -115,19 +119,23 @@ def dl(ver, device, output):
     # give regular user rwx
     if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {our_dmg} {mnt}', echo=True):
         return False
+    print(f'mounted {our_dmg} on {mnt}')
 
     # grab the thing
     if not shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
         return False
+    print(f'grabbed shared cache -> {output}')
 
     os.remove(our_dmg)
 
     # cleanup
     if not system(f'fusermount -u {mnt}', echo=True):
         return False
+    print(f'unmounted {mnt}')
 
     if not shutil.rmtree(mnt):
         return False
+    print(f'removed {mnt}')
 
     return True
 
@@ -135,6 +143,7 @@ def dl(ver, device, output):
 def trydl(ver, device, output, attempts=5):
     while attempts >= 0:
         if dl(ver, device, output):
+            print(f'{device} {ver} ipsw download successful!')
             break
 
         attempts -= 1
