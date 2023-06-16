@@ -34,15 +34,20 @@ class DEAdapter:
         dsc = cwd + '/' + dsc
 
         ext = 'ext'
-        os.mkdir(ext)
+        if not os.path.exists(ext):
+            os.mkdir(ext)
         os.chdir(ext)
 
-        jobs = os.cpu_count()
-        system(f'dyldex_all -j{jobs} {dsc}')
-        if shutil.copytree('binaries/System', cwd + output):
-            os.remove(dsc)
-            os.chdir(cwd)
-            shutil.rmtree(ext)
+        if not os.path.exists('binaries'):
+            jobs = os.cpu_count()
+            system(f'dyldex_all -j{jobs} {dsc}')
+            if os.path.exists('binaries/System'):
+                if shutil.copytree('binaries/System', cwd + output):
+                    if os.path.exists(dsc):
+                        os.remove(dsc)
+                    if os.path.exists(cwd + ext):
+                        os.chdir(cwd)
+                        shutil.rmtree(ext)
 
 
 def dump(filename):
@@ -102,49 +107,57 @@ def dl(ver, device, output):
         return False
     print(f'dmg: {dmg}', flush=True)
 
-    if not system(f'remotezip {ipsw} {dmg}', echo=True):
-        print(f'ERROR: Failed to download {dmg} from {ipsw}!', flush=True)
-        return False
-
     our_dmg = 'the.dmg'
-    if not shutil.move(dmg, our_dmg):
-        print(f'ERROR: Failed to rename {dmg} to {our_dmg}!', flush=True)
-        return False
-    print(f'{dmg} -> {our_dmg}', flush=True)
+    if not (os.path.exists(dmg) or os.path.exists(our_dmg)):
+        if not system(f'remotezip {ipsw} {dmg}', echo=True):
+            print(f'ERROR: Failed to download {dmg} from {ipsw}!', flush=True)
+            return False
+
+    if not os.path.exists(our_dmg):
+        if not shutil.move(dmg, our_dmg):
+            print(f'ERROR: Failed to rename {dmg} to {our_dmg}!', flush=True)
+            return False
+        print(f'{dmg} -> {our_dmg}', flush=True)
 
     # prep for mount
     mnt = '/mnt/ipsw'
-    if not system(f'sudo mkdir -p {mnt}', echo=True):
-        print(f'ERROR: Failed to create {mnt}!', flush=True)
-        return False
+    if not os.path.exists(mnt):
+        if not system(f'sudo mkdir -p {mnt}', echo=True):
+            print(f'ERROR: Failed to create {mnt}!', flush=True)
+            return False
 
-    uid = os.getuid()
-    gid = os.getgid()
+    if not os.path.exists(mnt + '/root'):
+        uid = os.getuid()
+        gid = os.getgid()
 
-    # give regular user rwx
-    if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {our_dmg} {mnt}', echo=True):
-        print(f'ERROR: Failed to mount {our_dmg} on {mnt}!', flush=True)
-        return False
-    print(f'Mounted {our_dmg} on {mnt}', flush=True)
+        # give regular user rwx
+        if not system(f'sudo apfs-fuse -o uid={uid},gid={gid},allow_other {our_dmg} {mnt}', echo=True):
+            print(f'ERROR: Failed to mount {our_dmg} on {mnt}!', flush=True)
+            return False
+        print(f'Mounted {our_dmg} on {mnt}', flush=True)
 
     # grab the thing
-    if not shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
-        print(f'ERROR: Failed to copy shared cache to {output}!', flush=True)
-        return False
-    print(f'Grabbed shared cache -> {output}', flush=True)
+    if os.path.exists(mnt + '/root'):
+        if not shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
+            print(f'ERROR: Failed to copy shared cache to {output}!', flush=True)
+            return False
+        print(f'Grabbed shared cache -> {output}', flush=True)
 
-    os.remove(our_dmg)
+    if os.path.exists(our_dmg):
+        os.remove(our_dmg)
 
     # cleanup
-    if not system(f'sudo umount {mnt}', echo=True):
-        print(f'ERROR: Failed to unmount {mnt}!', flush=True)
-        return False
-    print(f'Unmounted {mnt}', flush=True)
+    if os.path.exists(mnt + '/root'):
+        if not system(f'sudo umount {mnt}', echo=True):
+            print(f'ERROR: Failed to unmount {mnt}!', flush=True)
+            return False
+        print(f'Unmounted {mnt}', flush=True)
 
-    if not shutil.rmtree(mnt):
-        print(f'ERROR: Failed to remove {mnt}!', flush=True)
-        return False
-    print(f'Removed {mnt}', flush=True)
+    if os.path.exists(mnt):
+        if not shutil.rmtree(mnt):
+            print(f'ERROR: Failed to remove {mnt}!', flush=True)
+            return False
+        print(f'Removed {mnt}', flush=True)
 
     return True
 
