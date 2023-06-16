@@ -136,7 +136,7 @@ def dl(ver, device, output):
     os.remove(our_dmg)
 
     # cleanup
-    if not system(f'fusermount -u {mnt}', echo=True):
+    if not system(f'sudo umount {mnt}', echo=True):
         print(f'ERROR: Failed to unmount {mnt}!', flush=True)
         return False
     print(f'Unmounted {mnt}', flush=True)
