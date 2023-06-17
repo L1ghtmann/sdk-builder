@@ -161,10 +161,11 @@ def dl(ver, device, output):
         for file in os.listdir(path):
             if file.startswith('dyld_shared_cache'):
                 print(f'Found {file}', flush=True)
-                if not shutil.copy(path + file, os.getcwd() + '/' + file):
+                npath = os.getcwd() + '/' + file
+                if not shutil.copy(path + file, npath):
                     print(f'ERROR: Failed to copy {file} to {output}!', flush=True)
                     return False
-                print(f'Copied {file} to {os.getcwd() + '/' + file}', flush=True)
+                print(f'Copied {file} to {npath}', flush=True)
 
     os.chdir(cwd)
     if os.path.exists(our_dmg):
