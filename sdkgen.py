@@ -34,7 +34,11 @@ class DEAdapter:
         os.chdir(dsc)
         if not os.path.exists('binaries'):
             jobs = os.cpu_count()
+            if not os.path.exists('dyld_shared_cache_arm64'):
+                print('ERROR: dyld_shared_cache_arm64 DNE!', flush=True)
+                return False
             if not system(f'dyldex_all -j{jobs} dyld_shared_cache_arm64', echo=True):
+                print('ERROR: dyldex_all call failed!', flush=True)
                 return False
             if os.path.exists('binaries/System'):
                 if shutil.copytree('binaries/System', cwd + '/' + output):
@@ -43,8 +47,10 @@ class DEAdapter:
                         shutil.rmtree(dsc)
                     return True
                 else:
+                    print(f'ERROR: {output} creation failed!', flush=True)
                     return False
             else:
+                print('ERROR: ./binaries/System DNE!', flush=True)
                 return False
 
 
