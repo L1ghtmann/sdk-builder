@@ -106,8 +106,14 @@ def dl(ver, device, output):
         return False
     print(f'ipsw: {ipsw}', flush=True)
 
-    # get largest dmg
-    dmg = system_with_output(f"remotezip -l {ipsw} | sort -n | tail -n1 | awk '{{print $4}}'").rstrip()
+    if float(ver) >= 16.0:
+        # get second largest dmg
+        # https://github.com/Zuikyo/iOS-System-Symbols/issues/32#issuecomment-1263560228
+        dmg = system_with_output(f"remotezip -l {ipsw} | sort -n | tail -n2 | head -n1 | awk '{{print $4}}'").rstrip()
+    else:
+        # get largest dmg
+        dmg = system_with_output(f"remotezip -l {ipsw} | sort -n | tail -n1 | awk '{{print $4}}'").rstrip()
+
     if dmg == "":
         print(f'ERROR: Failed to find system dmg in {ipsw}!', flush=True)
         return False
