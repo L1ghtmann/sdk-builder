@@ -31,24 +31,16 @@ class DEAdapter:
 
     def extract_all(self, dsc, output):
         cwd = os.getcwd()
-        dsc = cwd + '/' + dsc
-
-        ext = 'ext'
-        if not os.path.exists(ext):
-            os.mkdir(ext)
-        os.chdir(ext)
-
-        if not os.path.exists('binaries') and os.path.exists(dsc):
+        os.chdir(dsc)
+        if not os.path.exists('binaries'):
             jobs = os.cpu_count()
-            if not system(f'dyldex_all -j{jobs} {dsc}', echo=True):
+            if not system(f'dyldex_all -j{jobs} dyld_shared_cache_arm64', echo=True):
                 return False
             if os.path.exists('binaries/System'):
                 if shutil.copytree('binaries/System', cwd + '/' + output):
+                    os.chdir(cwd)
                     if os.path.exists(dsc):
-                        os.remove(dsc)
-                    if os.path.exists(cwd + '/' + ext):
-                        os.chdir(cwd)
-                        shutil.rmtree(ext)
+                        shutil.rmtree(dsc)
                     return True
                 else:
                     return False
