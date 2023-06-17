@@ -164,6 +164,7 @@ def dl(ver, device, output):
                 if not shutil.copy(path + file, os.getcwd() + '/' + file):
                     print(f'ERROR: Failed to copy {file} to {output}!', flush=True)
                     return False
+                print(f'Copied {file} to {os.getcwd() + '/' + file}', flush=True)
 
     os.chdir(cwd)
     if os.path.exists(our_dmg):
