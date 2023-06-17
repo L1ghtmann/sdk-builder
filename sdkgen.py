@@ -1,5 +1,4 @@
 import subprocess
-import multiprocessing
 import concurrent.futures
 import sys
 import os
@@ -33,7 +32,7 @@ class DEAdapter:
         cwd = os.getcwd()
         os.chdir(dsc)
         if not os.path.exists('binaries'):
-            jobs = os.cpu_count()
+            jobs = os.cpu_count()-1
             if not os.path.exists('dyld_shared_cache_arm64'):
                 print('ERROR: dyld_shared_cache_arm64 DNE!', flush=True)
                 return False
@@ -230,6 +229,6 @@ if __name__ == "__main__":
 
     print(file_batch_list, flush=True)
     public_frameworks = sorted(list(set(file_batch_list)))
-    executor = concurrent.futures.ProcessPoolExecutor(multiprocessing.cpu_count()-1)
+    executor = concurrent.futures.ProcessPoolExecutor(os.cpu_count()-1)
     futures = [executor.submit(trydump, (item)) for item in public_frameworks]
     concurrent.futures.wait(futures)
