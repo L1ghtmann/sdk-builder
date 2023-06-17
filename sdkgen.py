@@ -229,6 +229,6 @@ if __name__ == "__main__":
 
     print(file_batch_list, flush=True)
     public_frameworks = sorted(list(set(file_batch_list)))
-    executor = concurrent.futures.ProcessPoolExecutor(os.cpu_count()-1)
+    executor = concurrent.futures.ProcessPoolExecutor(os.cpu_count()-2)
     futures = [executor.submit(trydump, (item)) for item in public_frameworks]
     concurrent.futures.wait(futures)
