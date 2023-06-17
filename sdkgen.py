@@ -131,6 +131,14 @@ def dl(ver, device, output):
             return False
         print(f'{dmg} -> {our_dmg}', flush=True)
 
+    # create dir
+    if not os.path.exists(output):
+        if not os.mkdir(output):
+            print(f'ERROR: Failed to create {output}!', flush=True)
+            return False
+        print(f'Created {output} dir', flush=True)
+        os.chdir(output)
+
     # prep for mount
     mnt = '/mnt/ipsw'
     if not os.path.exists(mnt):
@@ -150,12 +158,13 @@ def dl(ver, device, output):
 
     # grab the thing
     if os.path.exists(mnt + '/root'):
-        for file in os.listdir(mnt + '/root/System/Library/Caches/com.apple.dyld/'):
-            print(f'Found {file}')
-        if not shutil.copy(mnt + '/root/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm64', output):
-            print(f'ERROR: Failed to copy shared cache to {output}!', flush=True)
-            return False
-        print(f'Grabbed shared cache -> {output}', flush=True)
+        path = mnt + '/root/System/Library/Caches/com.apple.dyld/'
+        for file in os.listdir(path):
+            if file.startswith('dyld_shared_cache'):
+                print(f'Found {file}', flush=True)
+                if not shutil.copy(path + file, os.getcwd() + '/' + file):
+                    print(f'ERROR: Failed to copy {file} to {output}!', flush=True)
+                    return False
 
     if os.path.exists(our_dmg):
         os.remove(our_dmg)
