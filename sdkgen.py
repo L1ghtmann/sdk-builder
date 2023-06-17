@@ -153,7 +153,7 @@ def dl(ver, device, output):
             print(f'ERROR: Failed to create {output}!', flush=True)
             return False
         print(f'Created {output} dir', flush=True)
-        os.chdir(output)
+    os.chdir(output)
 
     # grab the thing
     if os.path.exists(mnt + '/root'):
