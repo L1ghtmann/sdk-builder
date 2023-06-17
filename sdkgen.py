@@ -123,14 +123,6 @@ def dl(ver, device, output):
             return False
         print(f'{dmg} -> {our_dmg}', flush=True)
 
-    # create dir
-    if not os.path.exists(output):
-        if not os.mkdir(output):
-            print(f'ERROR: Failed to create {output}!', flush=True)
-            return False
-        print(f'Created {output} dir', flush=True)
-        os.chdir(output)
-
     # prep for mount
     mnt = '/mnt/ipsw'
     if not os.path.exists(mnt):
@@ -148,6 +140,15 @@ def dl(ver, device, output):
             return False
         print(f'Mounted {our_dmg} on {mnt}', flush=True)
 
+    # create dir
+    cwd = os.getcwd()
+    if not os.path.exists(output):
+        if not os.mkdir(output):
+            print(f'ERROR: Failed to create {output}!', flush=True)
+            return False
+        print(f'Created {output} dir', flush=True)
+        os.chdir(output)
+
     # grab the thing
     if os.path.exists(mnt + '/root'):
         path = mnt + '/root/System/Library/Caches/com.apple.dyld/'
@@ -158,6 +159,7 @@ def dl(ver, device, output):
                     print(f'ERROR: Failed to copy {file} to {output}!', flush=True)
                     return False
 
+    os.chdir(cwd)
     if os.path.exists(our_dmg):
         os.remove(our_dmg)
 
