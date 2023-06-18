@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import subprocess
 import concurrent.futures
 import sys
@@ -90,6 +92,7 @@ def trydump(item):
     try:
         print(f'Dumping {item}', flush=True)
         dump(item)
+        time.sleep(5)
     except Exception as ex:
         print(ex, flush=True)
         print(f'ERROR: Failed to dump {item}!', flush=True)
@@ -215,7 +218,7 @@ if __name__ == "__main__":
             print('ERROR: Shared cache bin extraction failed!', flush=True)
             exit(1)
     if not os.path.exists(ext):
-        if not shutil.copytree(bins, ext):
+        if not shutil.move(bins, ext):
             print(f'ERROR: {bins} -> {ext} failed!', flush=True)
             exit(1)
 
@@ -224,11 +227,11 @@ if __name__ == "__main__":
     for filename in glob.iglob(ext + '**/**', recursive=True):
         if os.path.isfile(filename):
             if not os.path.exists(filename + '.tbd'):
-                if not '.h' in filename and not '.tbd' in filename:
+                if ".h" not in filename and ".tbd" not in filename:
                     file_batch_list.append(filename)
 
     print(file_batch_list, flush=True)
     public_frameworks = sorted(list(set(file_batch_list)))
-    executor = concurrent.futures.ProcessPoolExecutor()
+    executor = concurrent.futures.ProcessPoolExecutor(os.cpu_count()-1)
     futures = [executor.submit(trydump, (item)) for item in public_frameworks]
     concurrent.futures.wait(futures)
