@@ -92,7 +92,7 @@ def trydump(item):
     try:
         print(f'Dumping {item}', flush=True)
         dump(item)
-        time.sleep(2)
+        time.sleep(1)
     except Exception as ex:
         print(ex, flush=True)
         print(f'ERROR: Failed to dump {item}!', flush=True)
