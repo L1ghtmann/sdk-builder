@@ -61,16 +61,12 @@ def dump(filename):
     library = ktool.load_image(fd, force_misaligned_vm=True)
     objc_lib = ktool.load_objc_metadata(library)
 
-    time.sleep(2)
-
     tbd_text = ktool.generate_text_based_stub(library, compatibility=True)
     with open(f'{filename}.tbd', 'w') as tbd_out:
         tbd_out.write(tbd_text)
 
     data = library.serialize()
     objc_data = objc_lib.serialize()
-
-    time.sleep(2)
 
     framework_data = {
         'filename': filename,
@@ -82,8 +78,6 @@ def dump(filename):
 
     with open(f'{filename}.json', 'w') as fp:
         json.dump(framework_data, fp)
-
-    time.sleep(1)
 
     os.makedirs(f'{os.path.dirname(filename)}/Headers', exist_ok=True)
 
